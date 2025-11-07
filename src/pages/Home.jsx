@@ -26,7 +26,7 @@ const initialForm = {
 
 const API_URL = 'http://localhost:8082/api/clientes'
 
-const RegistroCliente = () => {
+const Home = () => {
   const [form, setForm] = useState(initialForm)
   const [errors, setErrors] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -276,4 +276,4 @@ const RegistroCliente = () => {
   )
 }
 
-export default RegistroCliente
+export default Home
