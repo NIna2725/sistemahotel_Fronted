@@ -1,13 +1,11 @@
 import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { getUserRole, getUser, logout } from "../services/authService";
 import {
   Box,
   Flex,
   Icon,
   Text,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  Badge,
   Drawer,
   DrawerOverlay,
   DrawerContent,
@@ -15,7 +13,8 @@ import {
   DrawerBody,
   IconButton,
   useDisclosure,
-  Tooltip,
+  Avatar,
+  Button,
 } from "@chakra-ui/react";
 import {
   FiHome,
@@ -23,351 +22,247 @@ import {
   FiBarChart2,
   FiBookOpen,
   FiCalendar,
-  FiMessageSquare,
-  FiHeart,
   FiSettings,
   FiMenu,
-  FiSearch,
-  FiChevronLeft,
+  FiGrid,
+  FiLogOut,
+  FiUser,
 } from "react-icons/fi";
 
-const sections = [
-  {
-    title: "Analytics",
-    items: [
-      { name: "Dashboard", icon: FiHome, active: true },
-      { name: "Performance", icon: FiTrendingUp },
-      { name: "Conversions", icon: FiBarChart2 },
-    ],
-  },
-  {
-    title: "Contents",
-    items: [
-      { name: "Guide", icon: FiBookOpen },
-      { name: "Hotspots", icon: FiMessageSquare, badge: 10 },
-      { name: "Checklists", icon: FiCalendar },
-      { name: "NPS", icon: FiHeart },
-    ],
-  },
-  {
-    title: "Customs",
-    items: [
-      { name: "Segments", icon: FiSettings, badge: 20 },
-      { name: "Theme", icon: FiSettings },
-    ],
-  },
-];
+const getSections = (userRole) => {
+  const baseSections = [];
+
+  // Secciones para RECEPCIONISTA
+  if (userRole === "RECEPCIONISTA") {
+    baseSections.push({
+      title: "Gestión",
+      items: [
+        { name: "Registro de Clientes", icon: FiHome, path: "/clientes/registro" },
+        { name: "Nueva Reserva", icon: FiCalendar, path: "/reservas" },
+        { name: "Lista de Reservas", icon: FiBookOpen, path: "/reservas/lista" },
+        { name: "Mapa de Habitaciones", icon: FiGrid, path: "/habitaciones/mapa" },
+      ],
+    });
+  }
+
+  // Secciones para ADMIN
+  if (userRole === "ADMIN") {
+    baseSections.push(
+      {
+        title: "Consultas",
+        items: [
+          { name: "Lista de Reservas", icon: FiBookOpen, path: "/reservas/lista" },
+          { name: "Mapa de Habitaciones", icon: FiGrid, path: "/habitaciones/mapa" },
+        ],
+      },
+      {
+        title: "Administración",
+        items: [
+          { name: "Gestión de Habitaciones", icon: FiSettings, path: "/admin/habitaciones" },
+          { name: "Gestión de Usuarios", icon: FiUser, path: "/admin/usuarios" },
+        ],
+      },
+      {
+        title: "Reportes",
+        items: [
+          { name: "Dashboard", icon: FiTrendingUp, path: "/admin/dashboard" },
+          { name: "Ocupación", icon: FiBarChart2 },
+          { name: "Ingresos", icon: FiBarChart2 },
+        ],
+      }
+    );
+  }
+
+  return baseSections;
+};
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const userRole = getUserRole();
+  const user = getUser();
+  const sections = getSections(userRole);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   const SidebarContent = ({ isDrawer = false }) => (
     <Box
-      bg="white"
+      className="bg-gradient-primary"
       h="100vh"
       w={collapsed && !isDrawer ? "80px" : "260px"}
       transition="width 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-      borderRight="1px solid"
-      borderColor="gray.200"
       display="flex"
       flexDirection="column"
-      boxShadow="sm"
+      boxShadow="2xl"
       overflow="hidden"
     >
-      {/* TOP */}
+      {/* Header con Logo */}
+      <Box p="6" borderBottom="1px solid" borderColor="whiteAlpha.200">
+        <Flex align="center" gap="3">
+          <Box className="text-4xl">🏨</Box>
+          {(!collapsed || isDrawer) && (
+            <Box>
+              <Text fontSize="xl" fontWeight="bold" color="white">
+                Hotel System
+              </Text>
+              <Text fontSize="xs" color="whiteAlpha.800">
+                Gestión Hotelera
+              </Text>
+            </Box>
+          )}
+        </Flex>
+      </Box>
+
+      {/* User Info */}
+      {user && (
+        <Box p="4" borderBottom="1px solid" borderColor="whiteAlpha.200">
+          <Flex align="center" gap="3">
+            <Avatar
+              size="sm"
+              name={user.username}
+              bg="whiteAlpha.300"
+              color="white"
+            />
+            {(!collapsed || isDrawer) && (
+              <Box flex="1">
+                <Text fontSize="sm" fontWeight="semibold" color="white">
+                  {user.username}
+                </Text>
+                <Text fontSize="xs" color="whiteAlpha.800">
+                  {user.rol}
+                </Text>
+              </Box>
+            )}
+          </Flex>
+        </Box>
+      )}
+
+      {/* Menu Items */}
       <Box
         overflowY="auto"
         overflowX="hidden"
         flex="1"
         p="4"
-        sx={{
-          "&::-webkit-scrollbar": {
-            width: "4px",
+        css={{
+          '&::-webkit-scrollbar': {
+            width: '4px',
           },
-          "&::-webkit-scrollbar-track": {
-            background: "transparent",
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
           },
-          "&::-webkit-scrollbar-thumb": {
-            background: "gray.300",
-            borderRadius: "full",
+          '&::-webkit-scrollbar-thumb': {
+            background: 'rgba(255,255,255,0.3)',
+            borderRadius: '4px',
           },
         }}
       >
-        {/* Logo */}
-        <Flex align="center" mb={6} minH="40px">
-          <Box
-            bg="gray.800"
-            minW="40px"
-            h="40px"
-            borderRadius="xl"
-            mr={collapsed && !isDrawer ? 0 : 3}
-            transition="margin 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-            flexShrink={0}
-          />
-          <Box
-            opacity={collapsed && !isDrawer ? 0 : 1}
-            transform={
-              collapsed && !isDrawer ? "translateX(-10px)" : "translateX(0)"
-            }
-            transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-            overflow="hidden"
-            whiteSpace="nowrap"
-            pointerEvents={collapsed && !isDrawer ? "none" : "auto"}
-          >
-            <Text fontWeight="bold" fontSize="md" lineHeight="shorter">
-              Halal Lab
-            </Text>
-            <Text fontSize="xs" color="gray.500" lineHeight="shorter" mt={0.5}>
-              Workspace switcher
-            </Text>
-          </Box>
-        </Flex>
-
-        {/* Search */}
-        <Box
-          mb={5}
-          opacity={collapsed && !isDrawer ? 0 : 1}
-          h={collapsed && !isDrawer ? "0" : "auto"}
-          overflow="hidden"
-          transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-          pointerEvents={collapsed && !isDrawer ? "none" : "auto"}
-        >
-          <InputGroup size="sm">
-            <InputLeftElement pointerEvents="none" h="40px">
-              <Icon as={FiSearch} color="gray.400" boxSize={4} />
-            </InputLeftElement>
-            <Input
-              placeholder="Search"
-              borderRadius="lg"
-              fontSize="sm"
-              h="40px"
-              bg="gray.50"
-              border="1px solid"
-              borderColor="gray.200"
-              _hover={{ borderColor: "gray.300", bg: "gray.100" }}
-              _focus={{
-                bg: "white",
-                borderColor: "blue.400",
-                boxShadow: "0 0 0 1px #3182ce",
-              }}
-              transition="all 0.2s"
-            />
-          </InputGroup>
-        </Box>
-
-        {/* Sections */}
-        {sections.map((section) => (
-          <Box key={section.title} mb={4}>
-            {/* Section Title */}
-            <Box
-              opacity={collapsed && !isDrawer ? 0 : 1}
-              h={collapsed && !isDrawer ? "0" : "auto"}
-              overflow="hidden"
-              transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-              mb={collapsed && !isDrawer ? 0 : 2}
-            >
+        {sections.map((section, idx) => (
+          <Box key={idx} mb="6">
+            {(!collapsed || isDrawer) && (
               <Text
                 fontSize="xs"
-                color="gray.400"
+                fontWeight="bold"
+                color="white"
                 textTransform="uppercase"
-                fontWeight="semibold"
-                letterSpacing="wider"
+                mb="2"
+                px="3"
+                opacity="0.9"
               >
                 {section.title}
               </Text>
-            </Box>
-
-            {/* Menu Items */}
-            <Box>
-              {section.items.map((item) => {
-                const menuItem = (
-                  <Flex
-                    key={item.name}
-                    align="center"
-                    justify={
-                      collapsed && !isDrawer ? "center" : "space-between"
-                    }
-                    bg={item.active ? "gray.100" : "transparent"}
-                    _hover={{
-                      bg: item.active ? "gray.200" : "gray.50",
-                      transform: "translateX(2px)",
-                    }}
-                    p={collapsed && !isDrawer ? "2.5" : "2.5"}
-                    borderRadius="lg"
-                    cursor="pointer"
-                    mb={1}
-                    transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
-                    position="relative"
-                  >
-                    <Flex align="center" gap="3" flex="1" minW="0">
-                      <Icon
-                        as={item.icon}
-                        boxSize={5}
-                        color={item.active ? "blue.500" : "gray.600"}
-                        flexShrink={0}
-                        transition="color 0.2s"
-                      />
-                      <Text
-                        fontSize="sm"
-                        color={item.active ? "gray.800" : "gray.700"}
-                        fontWeight={item.active ? "medium" : "normal"}
-                        opacity={collapsed && !isDrawer ? 0 : 1}
-                        transform={
-                          collapsed && !isDrawer
-                            ? "translateX(-10px)"
-                            : "translateX(0)"
-                        }
-                        transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-                        overflow="hidden"
-                        whiteSpace="nowrap"
-                        textOverflow="ellipsis"
-                        pointerEvents={collapsed && !isDrawer ? "none" : "auto"}
-                      >
-                        {item.name}
-                      </Text>
-                    </Flex>
-                    {item.badge && (
-                      <Badge
-                        borderRadius="full"
-                        bg="gray.800"
-                        color="white"
-                        fontSize="0.7em"
-                        px={2}
-                        py={0.5}
-                        opacity={collapsed && !isDrawer ? 0 : 1}
-                        transform={
-                          collapsed && !isDrawer ? "scale(0)" : "scale(1)"
-                        }
-                        transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-                        pointerEvents={collapsed && !isDrawer ? "none" : "auto"}
-                      >
-                        {item.badge}
-                      </Badge>
-                    )}
-                  </Flex>
-                );
-
-                // Tooltip solo en estado colapsado (desktop)
-                return collapsed && !isDrawer ? (
-                  <Tooltip
-                    key={item.name}
-                    label={item.name}
-                    placement="right"
-                    hasArrow
-                    bg="gray.800"
-                    color="white"
-                    fontSize="xs"
-                    px={3}
-                    py={2}
-                    borderRadius="md"
-                  >
-                    {menuItem}
-                  </Tooltip>
-                ) : (
-                  <Box key={item.name}>{menuItem}</Box>
-                );
-              })}
-            </Box>
+            )}
+            {section.items.map((item, itemIdx) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Flex
+                  key={itemIdx}
+                  align="center"
+                  gap="3"
+                  p="3"
+                  mb="1"
+                  borderRadius="lg"
+                  cursor="pointer"
+                  bg={isActive ? "whiteAlpha.300" : "transparent"}
+                  color="white"
+                  _hover={{
+                    bg: "whiteAlpha.200",
+                    transform: "translateX(4px)",
+                  }}
+                  transition="all 0.2s"
+                  onClick={() => item.path && navigate(item.path)}
+                >
+                  <Icon as={item.icon} boxSize="5" />
+                  {(!collapsed || isDrawer) && (
+                    <Text fontSize="sm" fontWeight="medium">
+                      {item.name}
+                    </Text>
+                  )}
+                </Flex>
+              );
+            })}
           </Box>
         ))}
       </Box>
 
-      {/* BOTTOM - Collapse Button (solo desktop) */}
-      {!isDrawer && (
-        <Box p="4" borderTop="1px solid" borderColor="gray.200" bg="white">
-          <Flex justify={collapsed ? "center" : "flex-end"}>
-            <Tooltip
-              label={collapsed ? "Expandir sidebar" : "Colapsar sidebar"}
-              placement="right"
-              hasArrow
-              bg="gray.800"
-              color="white"
-              fontSize="xs"
-              px={3}
-              py={2}
-              borderRadius="md"
-            >
-              <IconButton
-                icon={
-                  <Icon
-                    as={FiChevronLeft}
-                    boxSize={4}
-                    transform={collapsed ? "rotate(180deg)" : "rotate(0deg)"}
-                    transition="transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-                  />
-                }
-                aria-label={collapsed ? "Expandir" : "Colapsar"}
-                onClick={() => setCollapsed(!collapsed)}
-                bg="gray.800"
-                color="white"
-                borderRadius="lg"
-                _hover={{
-                  bg: "gray.700",
-                  transform: "scale(1.05)",
-                }}
-                _active={{
-                  bg: "gray.900",
-                  transform: "scale(0.95)",
-                }}
-                size="sm"
-                transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
-              />
-            </Tooltip>
-          </Flex>
-        </Box>
-      )}
+      {/* Logout Button */}
+      <Box p="4" borderTop="1px solid" borderColor="whiteAlpha.200">
+        <Button
+          leftIcon={<FiLogOut />}
+          onClick={handleLogout}
+          w="full"
+          size="sm"
+          bg="whiteAlpha.200"
+          color="white"
+          _hover={{ bg: "whiteAlpha.300" }}
+          display={collapsed && !isDrawer ? "none" : "flex"}
+        >
+          Cerrar Sesión
+        </Button>
+        {collapsed && !isDrawer && (
+          <IconButton
+            icon={<FiLogOut />}
+            onClick={handleLogout}
+            size="sm"
+            bg="whiteAlpha.200"
+            color="white"
+            _hover={{ bg: "whiteAlpha.300" }}
+            aria-label="Cerrar sesión"
+          />
+        )}
+      </Box>
     </Box>
   );
 
   return (
     <>
-      {/* Botón hamburguesa flotante (solo móvil) */}
-      <IconButton
-        icon={<Icon as={FiMenu} boxSize={5} />}
-        aria-label="Abrir menú"
-        onClick={onOpen}
-        position="fixed"
-        top="4"
-        left="4"
-        zIndex="dropdown"
-        bg="gray.800"
-        color="white"
-        borderRadius="lg"
-        _hover={{
-          bg: "gray.700",
-          transform: "scale(1.05)",
-        }}
-        _active={{
-          bg: "gray.900",
-          transform: "scale(0.95)",
-        }}
-        display={{ base: isOpen ? "none" : "flex", md: "none" }}
-        boxShadow="lg"
-        size="md"
-        transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
-      />
-
-      {/* Sidebar desktop */}
-      <Box display={{ base: "none", md: "block" }} position="relative">
+      {/* Desktop Sidebar */}
+      <Box display={{ base: "none", md: "block" }}>
         <SidebarContent />
       </Box>
 
-      {/* Drawer móvil */}
-      <Drawer placement="left" onClose={onClose} isOpen={isOpen} size="xs">
-        <DrawerOverlay
-          backdropFilter="blur(4px)"
-          bg="blackAlpha.400"
-          transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-        />
-        <DrawerContent maxW="260px" boxShadow="2xl">
-          <DrawerCloseButton
-            top="4"
-            right="4"
-            borderRadius="md"
-            _hover={{ bg: "gray.100" }}
-            transition="all 0.2s"
-          />
+      {/* Mobile Menu Button */}
+      <IconButton
+        icon={<FiMenu />}
+        onClick={onOpen}
+        display={{ base: "flex", md: "none" }}
+        position="fixed"
+        top="4"
+        left="4"
+        zIndex="999"
+        colorScheme="purple"
+        aria-label="Abrir menú"
+      />
+
+      {/* Mobile Drawer */}
+      <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
+        <DrawerOverlay />
+        <DrawerContent bg="transparent" boxShadow="none">
+          <DrawerCloseButton color="white" />
           <DrawerBody p="0">
             <SidebarContent isDrawer={true} />
           </DrawerBody>
